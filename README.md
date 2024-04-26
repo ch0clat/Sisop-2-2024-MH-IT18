@@ -312,6 +312,19 @@ Penjelasan kode bagian daemon secara lebih lengkap:
 
 ## Soal 4
 ```
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+
+int num_pids = 0;
+```
+
+`setup.c` memiliki 2 function yaitu start aplikasi dan mehentikan aplikasi. Untuk fungsi start maka, akan menggunakan function `void open`. Function ini akan membuat child proccess setiap akan start aplikasi baru. lalu setelah child proccess selesai akan menyimpan nama dan pid dari aplikasi yang di jalankan oleh function tersebut pada `setup.log`.
+
+```
 void open (const char *appName, int count, int state){
     for (int i = 0; i < count; i++){
         pid_t pid;
@@ -329,6 +342,7 @@ void open (const char *appName, int count, int state){
     }
 }
 ```
+Fungsi `file_open` digunakan saat argument `-f ..` . `file_open` akan membuka file tersebut dan melihat content yang ada di dalamnya. Fungsi ini akan membaca setiap line satu persatu dan melakukan function call `open` dengan memberi nama aplikasi ,count (berapa banyak instance yang ingin di buka) dan state (jenis pembukaan file `1` untuk aplikasi yang di buka dengan `-f` `0` untuk aplikasi yang di buka dengan `-o`). 
 ```
 void file_open (const char *filename, int state){
     FILE* config = fopen(filename, "r");
@@ -349,6 +363,7 @@ void file_open (const char *filename, int state){
 
 }
 ```
+Fungsi `stop` akan menghentikan aplikasi yang di telah di jalankan oleh fungsi `open`. Fungsi `stop` bisa digunakan untuk menghentikan semua aplikasi dan juga bisa menghentikan aplikasi yang di buka dengan file config. Fungsi ini akan mengambil state dari jenis argument yang digunakan. Jika state `1` function `stop` akan menyocokan line dari `setup.log` yang memiliki state yang sama. Jika state `0` `stop` akan menghentikan semua aplikasi yang ada di `setup.log`.
 ```
 void stop (int state) {
     FILE* log = fopen("setup.log", "r");
@@ -385,6 +400,7 @@ void stop (int state) {
 
 }
 ```
+Int main akan memproses argument yang di berikan saat menjalankan `setup`. `-0` akan menjalankan aplikasi yang tekah di berikan saat argument. `-k` akan menghentikan semua aplikasi yang memiliki state = 1 pada `setup.log` jika `argc` < 3, jika `argc` = 2 akan menghentikan semua aplikasi. `-f` akan menjalankan aplikasi yang sudah ada pada config file yang diberi pada argument ke 2. 
 ```
 int main (int argc, char *argv[]){
     int state = 0;
