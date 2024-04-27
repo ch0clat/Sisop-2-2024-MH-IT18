@@ -491,3 +491,12 @@ int main (int argc, char *argv[]){
     return 0;
 }
 ```
+Operasi menggunakan `config.conf`
+
+![image3](https://github.com/ch0clat/Sisop-2-2024-MH-IT18/assets/128571877/619accde-f172-4968-9828-01e7dc5e9c0d)
+
+Operasi tanpa `config.conf`
+
+![image2](https://github.com/ch0clat/Sisop-2-2024-MH-IT18/assets/128571877/9da45e78-7aa7-4d6f-adca-1898f72ebdf2)
+
+
