@@ -307,6 +307,55 @@ Penjelasan kode bagian daemon secara lebih lengkap:
 - `while(1)` merupakan loop utama yang menjalankan scan directory tiap 15 detik, yang menggunakan `scanDir(argv[1]`, dan terakhir akan memberi jeda 15 detik menggunakan `sleep(15)`.
 
 ## soal 2
+
+Pada pengerjaan soal no.2 baru sampai pembuatan daemon dan belum berhasil menjalankan fungsi-fungsi lain yang di perlukan pada soal no.2.
+
+```
+#include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <syslog.h>
+
+void daemonStart() {
+    pid_t pid, sid;
+    
+    pid = fork();
+    if (pid < 0) {
+        exit(EXIT_FAILURE);
+    }
+    if (pid > 0) {
+        exit(EXIT_SUCCESS);
+    }
+
+    umask(0);
+            
+    sid = setsid();
+    if (sid < 0) {
+        exit(EXIT_FAILURE);
+    }
+    
+    if ((chdir("/")) < 0) {
+        exit(EXIT_FAILURE);
+    }
+    
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+}
+
+void HSignal(int sig) {
+    
+}
+
+int main() {
+    signal(SIGRTMIN, HSignal);
+    signal(SIGUSR1, HSignal);
+    signal(SIGUSR2, HSignal);
+    daemonStart();
+}
+```
    
 ## Soal 3
 
