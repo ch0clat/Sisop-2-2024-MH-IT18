@@ -310,7 +310,7 @@ Penjelasan kode bagian daemon secara lebih lengkap:
 ![Screenshot from 2024-04-27 17-33-16](https://github.com/ch0clat/Sisop-2-2024-MH-IT18/assets/151893499/5c92e142-7477-4c7c-a1dc-5ac1329683d8)
 # Isi file berisi string aneh setelah program dijalankan:
 ![Screenshot from 2024-04-27 17-28-44](https://github.com/ch0clat/Sisop-2-2024-MH-IT18/assets/151893499/8f1980dc-a5d5-4ac4-9448-119a7764f615)
-# Isi virus.log setelah program dilankan:
+# Isi virus.log setelah program dijalankan:
 ![Screenshot from 2024-04-27 17-29-12](https://github.com/ch0clat/Sisop-2-2024-MH-IT18/assets/151893499/e8f7e407-e31b-4bed-9a10-028f24cd7259)
 
 
