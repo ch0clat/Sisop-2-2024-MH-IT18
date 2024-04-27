@@ -310,7 +310,7 @@ Penjelasan kode bagian daemon secara lebih lengkap:
 ![Screenshot from 2024-04-27 17-33-16](https://github.com/ch0clat/Sisop-2-2024-MH-IT18/assets/151893499/5c92e142-7477-4c7c-a1dc-5ac1329683d8)
 # Isi file berisi string aneh setelah program dijalankan:
 ![Screenshot from 2024-04-27 17-28-44](https://github.com/ch0clat/Sisop-2-2024-MH-IT18/assets/151893499/8f1980dc-a5d5-4ac4-9448-119a7764f615)
-# Isi virus.log setelah program dijalankan:
+# Isi virus.log setelah program dilankan:
 ![Screenshot from 2024-04-27 17-29-12](https://github.com/ch0clat/Sisop-2-2024-MH-IT18/assets/151893499/e8f7e407-e31b-4bed-9a10-028f24cd7259)
 
 
@@ -367,6 +367,115 @@ int main() {
 ```
    
 ## Soal 3
+```c
+#define MAX_PROCESSES 1024
+#define MAX_COMMAND_LENGTH 256
+
+pid_t processes[MAX_PROCESSES];
+int num_processes = 0;
+int monitor_mode = 0;
+int kill_mode = 0;
+char *username;
+FILE *log_file;
+```
+Disini didefinisikan konstanta MAX_PROCESSES sebagai jumlah maksimum proses yang dapat dimonitor (1024) dan MAX_COMMAND_LENGTH sebagai panjang maksimum perintah yang dapat dijalankan (256 karakter) Kemudian, deklarasi variabel global. Processes (array untuk menyimpan PID proses), num_processes (jumlah proses yang sedang dimonitor), monitor_mode (flag untuk mode monitor), kill_mode (flag untuk mode membunuh proses), username (nama pengguna yang akan dimonitor), dan log_file (file untuk mencatat log).
+
+```c
+void log_process(pid_t pid, char *process_name, int status) {
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    char timestamp[20];
+    strftime(timestamp, sizeof(timestamp), "%d:%m:%Y-%H:%M:%S", t);
+    fprintf(log_file, "[%s]-%d-%s-%s\n", timestamp, pid, process_name, status ? "JALAN" : "GAGAL");
+    fflush(log_file);
+}
+```
+Fungsi `log_process` digunakan untuk mencatat log proses ke dalam file log. Di sini fungsi akan mendapatkan waktu saat ini menggunakan time(NULL) selanjutnya, waktu akan dikonversi dan diformat timestamp dengan format %d:%m:%Y-%H:%M:%S.
+```c
+void handle_child_signal(int sig) {
+    pid_t pid;
+    int status;
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+        for (int i = 0; i < num_processes; i++) {
+            if (processes[i] == pid) {
+                char process_name[MAX_COMMAND_LENGTH];
+                sprintf(process_name, "/proc/%d/cmdline", pid);
+                FILE *f = fopen(process_name, "r");
+                if (f) {
+                    fgets(process_name, MAX_COMMAND_LENGTH, f);
+                    fclose(f);
+                    log_process(pid, process_name, WEXITSTATUS(status) == 0);
+                }
+                processes[i] = -1;
+                break;
+            }
+        }
+    }
+}
+```
+Fungsi handle_child_signal akan dipanggil ketika proses anak (proses yang diawasi) selesai. Fungsi akan mendeklarasi pid dan status untuk menyimpan PID dan status proses anak. waitpid(-1, &status, WNOHANG) digunakan untuk mendapatkan PID dan status dari proses anak yang telah selesai. Jika ada proses anak yang selesai akan dicari PID proses dalam jika ditemukan, fungsi akan membaca nama proses dan membuka file. Setelah itu dipanggil fungsi log_process untuk mencatat log proses dengan status WEXITSTATUS(status) == 0 (0 untuk "GAGAL", tidak 0 untuk "JALAN").
+```c
+int main(int argc, char *argv[]) {
+    if (argc < 3) {
+        printf("Usage: %s <command> <username>\n", argv[0]);
+        return 1;
+    }
+
+    username = argv[2];
+    char log_filename[256];
+    sprintf(log_filename, "%s.log", username);
+    log_file = fopen(log_filename, "a");
+    if (!log_file) {
+        perror("fopen");
+        return 1;
+    }
+
+    signal(SIGCHLD, handle_child_signal);
+
+    if (strcmp(argv[1], "-m") == 0) {
+        monitor_mode = 1;
+        while (1) {
+            pid_t pid = fork();
+            if (pid == 0) {
+                char *args[] = {"ps", "-u", username, "-o", "pid,cmd", NULL};
+                execvp("ps", args);
+                return 0;
+            } else if (pid > 0) {
+                processes[num_processes++] = pid;
+            }
+            sleep(1);
+        }
+    } else if (strcmp(argv[1], "-s") == 0) {
+        monitor_mode = 0;
+        for (int i = 0; i < num_processes; i++) {
+            if (processes[i] > 0) {
+                kill(processes[i], SIGTERM);
+            }
+        }
+    } else if (strcmp(argv[1], "-c") == 0) {
+        kill_mode = 1;
+        while (1) {
+            pid_t pid = fork();
+            if (pid == 0) {
+                char *args[] = {"pkill", "-u", username, NULL};
+                execvp("pkill", args);
+                return 0;
+            } else if (pid > 0) {
+                waitpid(pid, NULL, 0);
+            }
+            sleep(1);
+        }
+    } else if (strcmp(argv[1], "-a") == 0) {
+        kill_mode = 0;
+    }
+
+    fclose(log_file);
+    return 0;
+```
+Fungsi main akan memeriksa apakah jumlah argumen command line valid. Jika tidak, program akan menampilkan pesan penggunaan dan keluar. Kemudian, program mengambil nama pengguna dari argumen command line dan membuat nama file log dengan format [username].log. Program membuka file log dalam mode append ("a") dan mendaftarkan handler sinyal SIGCHLD dengan fungsi handle_child_signal. Selanjutnya, program memeriksa argumen pertama (argv[1]) untuk menentukan operasi yang dijalankan.
+
+Argumen -m akan membuat proses anak secara terus-menerus yang menjalankan perintah ps -u [username] -o pid,cmd untuk mendapatkan daftar proses yang berjalan untuk pengguna tersebut. PID proses anak akan disimpan dalam array processes.
+Jika argumen pertama adalah -s, program akan keluar dari mode monitor dan membunuh semua proses anak yang sedang berjalan dengan mengirimkan sinyal SIGTERM. -c, akan membuat program memasuki mode kill. Program akan membuat proses anak secara terus-menerus yang menjalankan perintah pkill -u [username] untuk membunuh semua proses pengguna tersebut. -a, akan keluar dari mode kill.
 
 ## Soal 4
 ```c
